@@ -1,23 +1,28 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 
 import {
-  Settings,
   Volume2,
   Sun,
   Wifi,
   Save,
   Bell,
+  ArrowLeft,
 } from "lucide-react";
+
 
 export default function Configuracion() {
 
   const [ruidoMaximo, setRuidoMaximo] = useState(2500);
+
   const [luzMinima, setLuzMinima] = useState(300);
+
   const [luzMaxima, setLuzMaxima] = useState(1000);
 
   const [guardado, setGuardado] = useState(false);
+
 
   function guardarConfiguracion() {
 
@@ -26,12 +31,19 @@ export default function Configuracion() {
     setTimeout(() => {
       setGuardado(false);
     }, 2500);
+
   }
 
+
   return (
+
     <main className="main-content">
 
+
+      {/* ENCABEZADO */}
+
       <header className="top-header">
+
         <div className="header-info">
 
           <div className="connection">
@@ -39,8 +51,25 @@ export default function Configuracion() {
           </div>
 
         </div>
+
       </header>
 
+
+      {/* VOLVER AL INICIO */}
+
+      <Link
+        href="/"
+        className="back-home"
+      >
+
+        <ArrowLeft size={16} />
+
+        Volver al inicio
+
+      </Link>
+
+
+      {/* INTRODUCCIÓN */}
 
       <section className="page-intro">
 
@@ -53,31 +82,40 @@ export default function Configuracion() {
         </h1>
 
         <p>
-          Define los parámetros utilizados para determinar las
-          condiciones ambientales del entorno.
+          Define los parámetros utilizados para determinar
+          las condiciones ambientales del entorno.
         </p>
 
       </section>
 
 
+      {/* CONFIGURACIONES */}
+
       <section className="settings-grid">
 
 
-        {/* RUIDO */}
+        {/* SENSOR DE RUIDO */}
 
         <div className="settings-card">
 
           <div className="settings-title">
 
             <div className="settings-icon">
+
               <Volume2 />
+
             </div>
 
             <div>
-              <h3>Sensor de ruido</h3>
+
+              <h3>
+                Sensor de ruido
+              </h3>
+
               <span>
                 KY-038
               </span>
+
             </div>
 
           </div>
@@ -115,21 +153,28 @@ export default function Configuracion() {
         </div>
 
 
-        {/* ILUMINACIÓN */}
+        {/* SENSOR DE LUZ */}
 
         <div className="settings-card">
 
           <div className="settings-title">
 
             <div className="settings-icon light-settings">
+
               <Sun />
+
             </div>
 
             <div>
-              <h3>Sensor de iluminación</h3>
+
+              <h3>
+                Sensor de iluminación
+              </h3>
+
               <span>
                 BH1750
               </span>
+
             </div>
 
           </div>
@@ -194,14 +239,21 @@ export default function Configuracion() {
           <div className="settings-title">
 
             <div className="settings-icon">
+
               <Wifi />
+
             </div>
 
             <div>
-              <h3>Conexión</h3>
+
+              <h3>
+                Conexión
+              </h3>
+
               <span>
                 ESP32
               </span>
+
             </div>
 
           </div>
@@ -212,6 +264,7 @@ export default function Configuracion() {
             <span className="connection-circle"></span>
 
             <div>
+
               <strong>
                 Dispositivo conectado
               </strong>
@@ -219,6 +272,7 @@ export default function Configuracion() {
               <small>
                 Comunicación disponible
               </small>
+
             </div>
 
           </div>
@@ -233,14 +287,21 @@ export default function Configuracion() {
           <div className="settings-title">
 
             <div className="settings-icon">
+
               <Bell />
+
             </div>
 
             <div>
-              <h3>Alertas</h3>
+
+              <h3>
+                Alertas
+              </h3>
+
               <span>
                 Notificaciones
               </span>
+
             </div>
 
           </div>
@@ -249,6 +310,7 @@ export default function Configuracion() {
           <div className="toggle-row">
 
             <div>
+
               <strong>
                 Alertas de ruido
               </strong>
@@ -256,11 +318,19 @@ export default function Configuracion() {
               <small>
                 Avisar cuando el nivel sea alto
               </small>
+
             </div>
 
+
             <label className="switch">
-              <input type="checkbox" defaultChecked />
+
+              <input
+                type="checkbox"
+                defaultChecked
+              />
+
               <span></span>
+
             </label>
 
           </div>
@@ -269,6 +339,7 @@ export default function Configuracion() {
           <div className="toggle-row">
 
             <div>
+
               <strong>
                 Alertas de iluminación
               </strong>
@@ -276,11 +347,19 @@ export default function Configuracion() {
               <small>
                 Avisar cuando esté fuera del rango
               </small>
+
             </div>
 
+
             <label className="switch">
-              <input type="checkbox" defaultChecked />
+
+              <input
+                type="checkbox"
+                defaultChecked
+              />
+
               <span></span>
+
             </label>
 
           </div>
@@ -289,6 +368,8 @@ export default function Configuracion() {
 
       </section>
 
+
+      {/* GUARDAR */}
 
       <div className="save-settings">
 
@@ -308,5 +389,7 @@ export default function Configuracion() {
       </div>
 
     </main>
+
   );
+
 }

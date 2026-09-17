@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   TrendingUp,
   TrendingDown,
@@ -7,6 +9,7 @@ import {
   Sun,
   Activity,
   CalendarDays,
+  ArrowLeft,
 } from "lucide-react";
 
 import {
@@ -18,6 +21,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+
 
 const datosRuido = [
   { hora: "00:00", valor: 1320 },
@@ -32,6 +36,7 @@ const datosRuido = [
   { hora: "22:00", valor: 1430 },
 ];
 
+
 const datosLuz = [
   { hora: "00:00", valor: 330 },
   { hora: "04:00", valor: 310 },
@@ -45,11 +50,18 @@ const datosLuz = [
   { hora: "22:00", valor: 360 },
 ];
 
+
 export default function Estadisticas() {
+
   return (
+
     <main className="main-content">
 
+
+      {/* ENCABEZADO */}
+
       <header className="top-header">
+
         <div className="header-info">
 
           <div className="connection">
@@ -62,8 +74,22 @@ export default function Estadisticas() {
           </div>
 
         </div>
+
       </header>
 
+
+      {/* VOLVER */}
+
+      <Link href="/" className="back-home">
+
+        <ArrowLeft size={16} />
+
+        Volver al inicio
+
+      </Link>
+
+
+      {/* INTRODUCCIÓN */}
 
       <section className="page-intro">
 
@@ -87,51 +113,80 @@ export default function Estadisticas() {
 
       <section className="statistics-grid">
 
+
+        {/* RUIDO */}
+
         <div className="stat-card">
 
           <div className="stat-icon">
             <Volume2 />
           </div>
 
-          <span>Promedio de ruido</span>
+          <span>
+            Promedio de ruido
+          </span>
 
-          <strong>1.842</strong>
+          <strong>
+            1.842
+          </strong>
 
           <small>
+
             <TrendingDown size={14} />
+
             8.4% respecto al período anterior
+
           </small>
 
         </div>
 
+
+        {/* LUZ */}
 
         <div className="stat-card">
 
           <div className="stat-icon light-stat">
+
             <Sun />
+
           </div>
 
-          <span>Promedio de iluminación</span>
+          <span>
+            Promedio de iluminación
+          </span>
 
-          <strong>356 lux</strong>
+          <strong>
+            356 lux
+          </strong>
 
           <small>
+
             <TrendingUp size={14} />
+
             5.2% respecto al período anterior
+
           </small>
 
         </div>
 
 
+        {/* ESTADO */}
+
         <div className="stat-card">
 
           <div className="stat-icon">
+
             <Activity />
+
           </div>
 
-          <span>Tiempo en condiciones aptas</span>
+          <span>
+            Tiempo en condiciones aptas
+          </span>
 
-          <strong>92.6%</strong>
+          <strong>
+            92.6%
+          </strong>
 
           <small>
             Durante las últimas 24 horas
@@ -146,11 +201,15 @@ export default function Estadisticas() {
 
       <section className="charts-grid statistics-charts">
 
+
+        {/* GRÁFICA DE RUIDO */}
+
         <div className="chart-card">
 
           <div className="chart-header">
 
             <div>
+
               <h3>
                 Nivel de ruido
               </h3>
@@ -158,13 +217,18 @@ export default function Estadisticas() {
               <span>
                 Comportamiento durante el día
               </span>
+
             </div>
 
           </div>
 
+
           <div className="chart">
 
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer
+              width="100%"
+              height={300}
+            >
 
               <LineChart data={datosRuido}>
 
@@ -203,11 +267,14 @@ export default function Estadisticas() {
         </div>
 
 
+        {/* GRÁFICA DE LUZ */}
+
         <div className="chart-card">
 
           <div className="chart-header">
 
             <div>
+
               <h3>
                 Iluminación
               </h3>
@@ -215,13 +282,18 @@ export default function Estadisticas() {
               <span>
                 Nivel de luz durante el día
               </span>
+
             </div>
 
           </div>
 
+
           <div className="chart">
 
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer
+              width="100%"
+              height={300}
+            >
 
               <LineChart data={datosLuz}>
 

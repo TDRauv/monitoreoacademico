@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   Search,
   Download,
@@ -7,6 +9,7 @@ import {
   Volume2,
   Sun,
   CalendarDays,
+  ArrowLeft,
 } from "lucide-react";
 
 const mediciones = [
@@ -61,8 +64,11 @@ export default function Historial() {
   return (
     <main className="main-content">
 
+      {/* ENCABEZADO */}
+
       <header className="top-header">
         <div className="header-info">
+
           <div className="connection">
             ● Sistema conectado
           </div>
@@ -71,10 +77,23 @@ export default function Historial() {
             <CalendarDays size={16} />
             17 de septiembre de 2026
           </div>
+
         </div>
       </header>
 
+
+      {/* VOLVER AL INICIO */}
+
+      <Link href="/" className="back-home">
+        <ArrowLeft size={16} />
+        Volver al inicio
+      </Link>
+
+
+      {/* INTRODUCCIÓN */}
+
       <section className="page-intro">
+
         <span className="eyebrow">
           ECOSENSE / REGISTROS
         </span>
@@ -87,6 +106,7 @@ export default function Historial() {
           Consulta y analiza los registros obtenidos por los sensores
           de ruido e iluminación.
         </p>
+
       </section>
 
 
@@ -95,30 +115,38 @@ export default function Historial() {
       <section className="history-summary">
 
         <div className="summary-card">
+
           <Volume2 size={22} />
 
           <div>
             <span>Registros totales</span>
             <strong>1.248</strong>
           </div>
+
         </div>
 
+
         <div className="summary-card">
+
           <Volume2 size={22} />
 
           <div>
             <span>Promedio de ruido</span>
             <strong>1.842</strong>
           </div>
+
         </div>
 
+
         <div className="summary-card">
+
           <Sun size={22} />
 
           <div>
             <span>Promedio de iluminación</span>
             <strong>356 lux</strong>
           </div>
+
         </div>
 
       </section>
@@ -139,10 +167,12 @@ export default function Historial() {
 
         </div>
 
+
         <button className="filter-button">
           <Filter size={16} />
           Filtrar
         </button>
+
 
         <button className="export-button">
           <Download size={16} />
@@ -159,19 +189,26 @@ export default function Historial() {
         <div className="table-header">
 
           <div>
-            <h3>Registro de mediciones</h3>
+
+            <h3>
+              Registro de mediciones
+            </h3>
+
             <span>
               Últimos registros obtenidos por el ESP32
             </span>
+
           </div>
 
         </div>
+
 
         <div className="table-container">
 
           <table>
 
             <thead>
+
               <tr>
                 <th>ID</th>
                 <th>Fecha</th>
@@ -181,7 +218,9 @@ export default function Historial() {
                 <th>Iluminación</th>
                 <th>Estado</th>
               </tr>
+
             </thead>
+
 
             <tbody>
 
@@ -206,6 +245,7 @@ export default function Historial() {
                   </td>
 
                   <td>
+
                     <span
                       className={
                         medicion.estadoRuido === "APTO"
@@ -215,6 +255,7 @@ export default function Historial() {
                     >
                       {medicion.estadoRuido}
                     </span>
+
                   </td>
 
                   <td>
@@ -222,6 +263,7 @@ export default function Historial() {
                   </td>
 
                   <td>
+
                     <span
                       className={
                         medicion.estadoLuz === "APTA"
@@ -231,6 +273,7 @@ export default function Historial() {
                     >
                       {medicion.estadoLuz}
                     </span>
+
                   </td>
 
                 </tr>

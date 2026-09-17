@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
 import {
   Home,
   LineChart,
@@ -9,47 +12,68 @@ import {
 } from "lucide-react";
 
 export default function Sidebar() {
+  const pathname = usePathname();
+
+  const menu = [
+    {
+      nombre: "Inicio",
+      ruta: "/",
+      icono: Home,
+    },
+    {
+      nombre: "Historial",
+      ruta: "/historial",
+      icono: LineChart,
+    },
+    {
+      nombre: "Estadísticas",
+      ruta: "/estadisticas",
+      icono: PieChart,
+    },
+    {
+      nombre: "Configuración",
+      ruta: "/configuracion",
+      icono: Settings,
+    },
+  ];
+
   return (
     <aside className="sidebar">
 
       <div className="brand">
-
         <div className="brand-icon">
           <Leaf size={25} />
         </div>
 
         <div>
-          <strong>MONITOREO</strong>
-          <span>AMBIENTAL</span>
+          <strong>ECOSENSE</strong>
+          <span>MONITOREO AMBIENTAL</span>
         </div>
-
       </div>
-
 
       <nav className="navigation">
 
-        <a className="nav-item active">
-          <Home size={19} />
-          <span>Inicio</span>
-        </a>
+        {menu.map((item) => {
+          const Icon = item.icono;
 
-        <a className="nav-item">
-          <LineChart size={19} />
-          <span>Historial</span>
-        </a>
+          const activo =
+            item.ruta === "/"
+              ? pathname === "/"
+              : pathname.startsWith(item.ruta);
 
-        <a className="nav-item">
-          <PieChart size={19} />
-          <span>Estadísticas</span>
-        </a>
-
-        <a className="nav-item">
-          <Settings size={19} />
-          <span>Configuración</span>
-        </a>
+          return (
+            <Link
+              key={item.ruta}
+              href={item.ruta}
+              className={`nav-item ${activo ? "active" : ""}`}
+            >
+              <Icon size={19} />
+              <span>{item.nombre}</span>
+            </Link>
+          );
+        })}
 
       </nav>
-
 
       <div className="sidebar-bottom">
 
@@ -59,11 +83,11 @@ export default function Sidebar() {
         </div>
 
         <small>
-          Última actualización
+          Dispositivo
         </small>
 
         <p>
-          Esperando dispositivo...
+          ESP32 conectado
         </p>
 
       </div>

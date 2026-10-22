@@ -1,36 +1,94 @@
 "use client";
 
-import {
-  Wifi,
-  CalendarDays,
-  Clock,
-} from "lucide-react";
+import { useSyncExternalStore } from "react";
+import { Wifi, CalendarDays, Clock, Menu } from "lucide-react";
 
-export default function Header() {
+let currentDateTimeSnapshot = null;
+const listeners = new Set();
+
+function updateSnapshot() {
+  const now = new Date();
+  
+  const dateStr = now.toLocaleDateString("es-CO", {
+    day: "numeric",
+    month: "short",
+  });
+
+  const timeStr = now.toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  currentDateTimeSnapshot = `${dateStr}|${timeStr}`;
+}
+
+let timerId = null;
+
+function subscribe(callback) {
+  listeners.add(callback);
+
+  if (!timerId) {
+    updateSnapshot();
+    timerId = setInterval(() => {
+      updateSnapshot();
+      listeners.forEach((listener) => listener());
+    }, 1000);
+  }
+
+  return () => {
+    listeners.delete(callback);
+    if (listeners.size === 0 && timerId) {
+      clearInterval(timerId);
+      timerId = null;
+    }
+  };
+}
+
+function getSnapshot() {
+  if (!currentDateTimeSnapshot) {
+    updateSnapshot();
+  }
+  return currentDateTimeSnapshot;
+}
+
+function getServerSnapshot() {
+  return null;
+}
+
+export default function Header({ onMenuClick }) {
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [fecha, hora] = snapshot ? snapshot.split("|") : ["--", "--:--:--"];
+
   return (
     <header className="top-header">
-
-      <div className="header-spacer"></div>
+      {/* Botón hamburguesa visible solo en celular */}
+      <button 
+        type="button" 
+        className="mobile-menu-btn" 
+        onClick={onMenuClick}
+        aria-label="Abrir menú"
+      >
+        <Menu size={22} />
+      </button>
 
       <div className="header-info">
-
         <div className="connection">
-          <Wifi size={16} />
-          Conectado
+          <Wifi size={14} />
+          <span className="connection-text">ESP32</span>
         </div>
 
         <div className="header-date">
-          <CalendarDays size={16} />
-          <span>16 de septiembre de 2026</span>
+          <CalendarDays size={14} />
+          <span>{fecha}</span>
         </div>
 
         <div className="header-time">
-          <Clock size={16} />
-          <span>16:13</span>
+          <Clock size={14} />
+          <span>{hora}</span>
         </div>
-
       </div>
-
     </header>
   );
 }

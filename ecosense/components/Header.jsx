@@ -1,7 +1,8 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { Wifi, CalendarDays, Clock, Menu } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { Wifi, CalendarDays, Clock, Menu, LogOut } from "lucide-react";
 
 let currentDateTimeSnapshot = null;
 const listeners = new Set();
@@ -60,10 +61,11 @@ function getServerSnapshot() {
 export default function Header({ onMenuClick }) {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   const [fecha, hora] = snapshot ? snapshot.split("|") : ["--", "--:--:--"];
+  const { usuario, logout } = useAuth();
 
   return (
     <header className="top-header">
-      {/* Botón hamburguesa visible solo en celular */}
+      {/* Botón hamburguesa visible en celulares */}
       <button 
         type="button" 
         className="mobile-menu-btn" 
@@ -88,6 +90,20 @@ export default function Header({ onMenuClick }) {
           <Clock size={14} />
           <span>{hora}</span>
         </div>
+
+        {/* Botón rápido de cerrar sesión para celular / header */}
+        {usuario && (
+          <button
+            type="button"
+            onClick={logout}
+            className="header-logout-btn"
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+          >
+            <LogOut size={16} />
+            <span className="header-logout-text">Salir</span>
+          </button>
+        )}
       </div>
     </header>
   );

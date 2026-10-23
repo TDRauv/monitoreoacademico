@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
 
 const AuthContext = createContext(null);
 
@@ -35,6 +36,7 @@ export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [, startTransition] = useTransition();
+  const router = useRouter();
 
   useEffect(() => {
     // startTransition evita renders en cascada y satisface la regla de React 19 / ESLint
@@ -64,11 +66,14 @@ export function AuthProvider({ children }) {
     const { password: _, ...userData } = match;
     setUsuario(userData);
     localStorage.setItem("ecosense_session", JSON.stringify(userData));
+    router.push("/");
   };
 
   const logout = () => {
     setUsuario(null);
     localStorage.removeItem("ecosense_session");
+    // Redirige a la raíz para que se desmonte la vista actual y aparezca de inmediato el login
+    router.push("/");
   };
 
   return (

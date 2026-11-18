@@ -2,98 +2,58 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { useRealtimeSensors } from "@/components/useRealtimeSensors";
+import { generarInformePDF } from "@/lib/exportPdf";
+import LoginModal from "@/components/LoginModal";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
+import MeasurementsTable from "@/components/MeasurementsTable";
 import {
   ArrowLeft,
   Search,
-  Filter,
-  Download,
-  Clock,
-  Volume2,
-  Sun,
-  Activity,
+  FileDown,
+  Database,
+  CheckCircle,
+  AlertTriangle,
 } from "lucide-react";
 
-// Función auxiliar para generar fechas recientes dinámicas
-const getRecentTime = (minutosAtras = 0) => {
-  const date = new Date(Date.now() - minutosAtras * 60 * 1000);
-  const fechaStr = date.toLocaleDateString("es-CO", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-  const horaStr = date.toLocaleTimeString("es-CO", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  return `${fechaStr} - ${horaStr}`;
-};
-
 export default function HistorialPage() {
+  const { usuario, cargando } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("TODOS");
 
-  // Mediciones generadas en base a la hora real
-  const [mediciones] = useState([
-    {
-      id: 1248,
-      fecha: getRecentTime(1),
-      ruido: 1842,
-      estadoRuido: "APTO",
-      lux: 356.4,
-      estadoLuz: "APTA",
-    },
-    {
-      id: 1247,
-      fecha: getRecentTime(5),
-      ruido: 2310,
-      estadoRuido: "APTO",
-      lux: 412.75,
-      estadoLuz: "APTA",
-    },
-    {
-      id: 1246,
-      fecha: getRecentTime(12),
-      ruido: 2865,
-      estadoRuido: "ALTO",
-      lux: 280.33,
-      estadoLuz: "BAJA",
-    },
-    {
-      id: 1245,
-      fecha: getRecentTime(25),
-      ruido: 1620,
-      estadoRuido: "APTO",
-      lux: 678.21,
-      estadoLuz: "APTA",
-    },
-    {
-      id: 1244,
-      fecha: getRecentTime(45),
-      ruido: 1410,
-      estadoRuido: "APTO",
-      lux: 512.0,
-      estadoLuz: "APTA",
-    },
-    {
-      id: 1243,
-      fecha: getRecentTime(90),
-      ruido: 2600,
-      estadoRuido: "ALTO",
-      lux: 310.4,
-      estadoLuz: "APTA",
-    },
-  ]);
+  const { ultimaLectura, historialReciente, umbrales } = useRealtimeSensors(100);
 
-  const medicionesFiltradas = mediciones.filter(
-    (m) =>
-      m.id.toString().includes(busqueda) ||
-      m.fecha.toLowerCase().includes(busqueda.toLowerCase()) ||
-      m.estadoRuido.toLowerCase().includes(busqueda.toLowerCase()) ||
-      m.estadoLuz.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  if (cargando) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Cargando historial...</p>
+      </div>
+    );
+  }
+
+  if (!usuario) {
+    return <LoginModal />;
+  }
+
+  const medicionesFiltradas = historialReciente.filter((m) => {
+    const coincideTexto =
+      String(m.id).includes(busqueda) ||
+      (m.dispositivo || "").toLowerCase().includes(busqueda.toLowerCase());
+
+    const esApto = m.estado_ruido === "APTO" && m.estado_luz === "APTA";
+    if (filtroEstado === "APTOS") return coincideTexto && esApto;
+    if (filtroEstado === "ALERTAS") return coincideTexto && !esApto;
+    return coincideTexto;
+  });
+
+  const totalAptos = historialReciente.filter(
+    (m) => m.estado_ruido === "APTO" && m.estado_luz === "APTA"
+  ).length;
+  const totalAlertas = historialReciente.length - totalAptos;
 
   return (
     <div className="app-container">
@@ -102,129 +62,89 @@ export default function HistorialPage() {
       <main className="main-content">
         <Header onMenuClick={() => setSidebarOpen(true)} />
 
-        <div style={{ marginTop: "18px" }}>
-          <Link href="/" className="back-home">
-            <ArrowLeft size={14} />
-            <span>Volver al inicio</span>
-          </Link>
-        </div>
-
-        <section className="page-intro" style={{ paddingTop: "10px" }}>
+        <section className="page-intro">
           <div>
-            <span className="eyebrow">REGISTRO HISTÓRICO</span>
+            <Link href="/" className="back-home">
+              <ArrowLeft size={14} /> Volver al Panel Principal
+            </Link>
             <h1>
               Historial de <span>Mediciones</span>
             </h1>
             <p>
-              Auditoría cronológica de los niveles capturados por los sensores
-              ESP32 en las instalaciones.
+              Bitácora cronológica completa almacenada en Supabase (Rangos aptos: Ruido{" "}
+              {umbrales.ruidoMin}–{umbrales.ruidoMax} ADC | Luz {umbrales.luxMin}–
+              {umbrales.luxMax} lux).
             </p>
           </div>
+
+          <button
+            type="button"
+            className="pdf-export-btn"
+            onClick={() =>
+              generarInformePDF({
+                mediciones: medicionesFiltradas,
+                usuario,
+                ultimaLectura,
+                umbrales,
+              })
+            }
+          >
+            <FileDown size={17} />
+            <span>Exportar Historial PDF</span>
+          </button>
         </section>
 
-        {/* Resumen rápido */}
         <section className="history-summary">
           <div className="summary-card">
-            <Activity size={24} />
+            <Database size={26} />
             <div>
-              <span>Total de lecturas hoy</span>
-              <strong>{mediciones.length} registros</strong>
+              <span>Total Registros</span>
+              <strong>{historialReciente.length}</strong>
             </div>
           </div>
 
-          <div className="summary-card" style={{ color: "var(--cyan)" }}>
-            <Sun size={24} />
+          <div className="summary-card">
+            <CheckCircle size={26} />
             <div>
-              <span>Promedio Iluminación</span>
-              <strong>425 lux</strong>
+              <span>Lecturas en Rango Apto</span>
+              <strong>{totalAptos}</strong>
             </div>
           </div>
 
-          <div className="summary-card" style={{ color: "var(--yellow)" }}>
-            <Volume2 size={24} />
+          <div className="summary-card" style={{ color: "#dc2626" }}>
+            <AlertTriangle size={26} />
             <div>
-              <span>Picos de Ruido</span>
-              <strong>2 alertas</strong>
+              <span>Lecturas Fuera de Rango</span>
+              <strong>{totalAlertas}</strong>
             </div>
           </div>
         </section>
 
-        {/* Barra de herramientas */}
         <div className="history-toolbar">
           <div className="search-box">
-            <Search size={15} />
+            <Search size={16} />
             <input
               type="text"
-              placeholder="Buscar por ID, estado o fecha..."
+              placeholder="Buscar por ID o dispositivo..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
             />
           </div>
 
-          <button type="button" className="filter-button">
-            <Filter size={15} />
-            <span>Filtrar</span>
-          </button>
-
-          <button type="button" className="export-button">
-            <Download size={15} />
-            <span>Exportar CSV</span>
+          <button
+            type="button"
+            className="filter-button"
+            onClick={() =>
+              setFiltroEstado((prev) =>
+                prev === "TODOS" ? "APTOS" : prev === "APTOS" ? "ALERTAS" : "TODOS"
+              )
+            }
+          >
+            Filtro: <strong>{filtroEstado}</strong>
           </button>
         </div>
 
-        {/* Tabla */}
-        <div className="table-card history-table">
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Fecha y hora</th>
-                  <th>Ruido (ADC)</th>
-                  <th>Estado ruido</th>
-                  <th>Luz (lux)</th>
-                  <th>Estado luz</th>
-                </tr>
-              </thead>
-              <tbody>
-                {medicionesFiltradas.length > 0 ? (
-                  medicionesFiltradas.map((m) => (
-                    <tr key={m.id}>
-                      <td>{m.id}</td>
-                      <td>{m.fecha}</td>
-                      <td>{m.ruido}</td>
-                      <td>
-                        <span
-                          className={`table-status ${
-                            m.estadoRuido === "APTO" ? "good" : "danger"
-                          }`}
-                        >
-                          {m.estadoRuido}
-                        </span>
-                      </td>
-                      <td>{m.lux.toFixed(2)}</td>
-                      <td>
-                        <span
-                          className={`table-status ${
-                            m.estadoLuz === "APTA" ? "good" : "warning"
-                          }`}
-                        >
-                          {m.estadoLuz}
-                        </span>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" style={{ textAlign: "center", padding: "30px" }}>
-                      No se encontraron registros que coincidan con la búsqueda.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <MeasurementsTable mediciones={medicionesFiltradas} />
       </main>
     </div>
   );

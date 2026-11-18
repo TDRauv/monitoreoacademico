@@ -1,100 +1,116 @@
 "use client";
 
+import { useState } from "react";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 
-const data = [
-  { hora: "12:00", lux: 430 },
-  { hora: "14:00", lux: 390 },
-  { hora: "16:00", lux: 410 },
-  { hora: "18:00", lux: 370 },
-  { hora: "20:00", lux: 340 },
-  { hora: "22:00", lux: 360 },
-  { hora: "00:00", lux: 330 },
-  { hora: "04:00", lux: 310 },
-  { hora: "08:00", lux: 385 },
-  { hora: "10:00", lux: 440 },
-  { hora: "12:00", lux: 356 },
-];
+export default function LightChart({ historial = [], umbrales }) {
+  const [rango, setRango] = useState(20);
 
-export default function LightChart() {
+  const lMin = Number(umbrales?.luxMin ?? 300);
+  const lMax = Number(umbrales?.luxMax ?? 1000);
+
+  const datos = [...historial]
+    .slice(0, rango)
+    .reverse()
+    .map((m) => ({
+      hora: new Date(m.created_at).toLocaleTimeString("es-CO", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }),
+      lux: Number(m.lux),
+    }));
+
   return (
     <div className="chart-card">
-
       <div className="chart-header">
-
         <div>
-          <h3>☀ Historial de iluminación</h3>
-
-          <span>
-            Comportamiento de las últimas 24 horas
-          </span>
+          <h3>Tendencia de Iluminación</h3>
+          <span>Rango óptimo: {lMin} – {lMax} lux</span>
         </div>
 
         <div className="chart-filter">
-
-          <button className="selected">
-            24 h
-          </button>
-
-          <button>
-            7 días
-          </button>
-
-          <button>
-            30 días
-          </button>
-
+          {[10, 20, 30].map((n) => (
+            <button
+              key={n}
+              type="button"
+              className={rango === n ? "selected" : ""}
+              onClick={() => setRango(n)}
+            >
+              {n} lect.
+            </button>
+          ))}
         </div>
-
       </div>
 
       <div className="chart">
-
-        <ResponsiveContainer width="100%" height={250}>
-
-          <LineChart data={data}>
-
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="rgba(255,255,255,0.06)"
+        <ResponsiveContainer width="100%" height={245}>
+          <AreaChart data={datos}>
+            <defs>
+              <linearGradient id="gradLuz" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#0284c7" stopOpacity={0.32} />
+                <stop offset="95%" stopColor="#0284c7" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" vertical={false} />
+            <XAxis dataKey="hora" stroke="#64748b" fontSize={11} />
+            <YAxis stroke="#64748b" fontSize={11} domain={[0, "auto"]} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "#ffffff",
+                borderColor: "#cbd5e1",
+                borderRadius: "10px",
+                fontSize: "12px",
+                boxShadow: "0 4px 12px rgba(15,23,42,0.08)",
+              }}
             />
-
-            <XAxis
-              dataKey="hora"
-              stroke="#71858b"
-              fontSize={11}
+            <ReferenceLine
+              y={lMax}
+              stroke="#dc2626"
+              strokeDasharray="5 5"
+              label={{
+                value: `Máx (${lMax})`,
+                position: "insideTopRight",
+                fill: "#dc2626",
+                fontSize: 10,
+                fontWeight: 700,
+              }}
             />
-
-            <YAxis
-              stroke="#71858b"
-              fontSize={11}
+            <ReferenceLine
+              y={lMin}
+              stroke="#d97706"
+              strokeDasharray="4 4"
+              label={{
+                value: `Mín (${lMin})`,
+                position: "insideBottomRight",
+                fill: "#d97706",
+                fontSize: 10,
+                fontWeight: 700,
+              }}
             />
-
-            <Tooltip />
-
-            <Line
+            <Area
               type="monotone"
               dataKey="lux"
-              stroke="#29bce8"
-              strokeWidth={3}
-              dot={{ r: 3 }}
-              activeDot={{ r: 6 }}
+              name="Iluminación (lux)"
+              stroke="#0284c7"
+              strokeWidth={2.5}
+              fillOpacity={1}
+              fill="url(#gradLuz)"
+              isAnimationActive={false}
             />
-
-          </LineChart>
-
+          </AreaChart>
         </ResponsiveContainer>
-
       </div>
-
     </div>
   );
 }

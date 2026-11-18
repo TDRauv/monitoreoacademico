@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
+import LoginModal from "@/components/LoginModal";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import {
@@ -13,37 +15,112 @@ import {
   Lock,
   ArrowLeft,
   CheckCircle2,
-  Sliders,
-  Cpu,
+  Users,
 } from "lucide-react";
 
 export default function ConfiguracionPage() {
   const { usuario, cargando } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Parámetros de umbrales del sistema
   const [config, setConfig] = useState({
+    ruidoMin: 300,
     ruidoMax: 2500,
     luxMin: 300,
     luxMax: 1000,
-    notificaciones: true,
-    alertasSonoras: false,
   });
 
-  const [guardadoExitoso, setGuardadoExitoso] = useState(false);
+  const [listaUsuarios, setListaUsuarios] = useState([]);
+  const [guardando, setGuardando] = useState(false);
+  const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
 
-  // Validación de privilegios
   const esAdmin = usuario?.rol === "admin";
   const esDocente = usuario?.rol === "docente";
   const esEstudiante = usuario?.rol === "estudiante";
   const puedeEditar = esAdmin;
 
-  const handleSave = (e) => {
+  useEffect(() => {
+    async function cargarDatos() {
+      // 1. Cargar umbrales
+      const { data: cfg } = await supabase
+        .from("configuracion")
+        .select("*")
+        .eq("id", 1)
+        .single();
+
+      if (cfg) {
+        setConfig({
+          ruidoMin: Number(cfg.ruido_min),
+          ruidoMax: Number(cfg.ruido_max),
+          luxMin: Number(cfg.lux_min),
+          luxMax: Number(cfg.lux_max),
+        });
+      }
+
+      // 2. Cargar usuarios registrados si es admin
+      if (usuario?.rol === "admin") {
+        const { data: perfiles } = await supabase
+          .from("perfiles")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (perfiles) setListaUsuarios(perfiles);
+      }
+    }
+
+    if (usuario) void cargarDatos();
+  }, [usuario]);
+
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!puedeEditar) return;
+    setMensaje({ tipo: "", texto: "" });
 
-    setGuardadoExitoso(true);
-    setTimeout(() => setGuardadoExitoso(false), 3000);
+    if (config.ruidoMin >= config.ruidoMax || config.luxMin >= config.luxMax) {
+      setMensaje({
+        tipo: "error",
+        texto: "El umbral mínimo debe ser estrictamente menor que el umbral máximo.",
+      });
+      return;
+    }
+
+    setGuardando(true);
+    const { error } = await supabase
+      .from("configuracion")
+      .update({
+        ruido_min: Number(config.ruidoMin),
+        ruido_max: Number(config.ruidoMax),
+        lux_min: Number(config.luxMin),
+        lux_max: Number(config.luxMax),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", 1);
+
+    setGuardando(false);
+
+    if (error) {
+      setMensaje({ tipo: "error", texto: `Error al guardar: ${error.message}` });
+    } else {
+      setMensaje({
+        tipo: "ok",
+        texto: "Umbrales actualizados en Supabase. Todo el sistema ya evalúa con los nuevos rangos.",
+      });
+      setTimeout(() => setMensaje({ tipo: "", texto: "" }), 4000);
+    }
+  };
+
+  const cambiarRolUsuario = async (userId, nuevoRol) => {
+    const { error } = await supabase
+      .from("perfiles")
+      .update({ rol: nuevoRol })
+      .eq("id", userId);
+
+    if (!error) {
+      setListaUsuarios((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, rol: nuevoRol } : u))
+      );
+      setMensaje({ tipo: "ok", texto: "Rol de usuario actualizado correctamente." });
+      setTimeout(() => setMensaje({ tipo: "", texto: "" }), 3000);
+    }
   };
 
   if (cargando) {
@@ -55,23 +132,15 @@ export default function ConfiguracionPage() {
     );
   }
 
+  if (!usuario) return <LoginModal />;
+
   return (
     <div className="app-container">
-      {/* Sidebar sincronizado */}
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <main className="main-content">
-        {/* Encabezado con hora real y botón móvil */}
         <Header onMenuClick={() => setSidebarOpen(true)} />
 
-        <div style={{ marginTop: "18px" }}>
-          <Link href="/" className="back-home">
-            <ArrowLeft size={14} />
-            <span>Volver al inicio</span>
-          </Link>
-        </div>
-
-        {/* CASO 1: Bloqueo de acceso para Estudiantes */}
         {esEstudiante ? (
           <div
             className="settings-card"
@@ -87,12 +156,13 @@ export default function ConfiguracionPage() {
                 width: "56px",
                 height: "56px",
                 borderRadius: "50%",
-                background: "rgba(239, 85, 85, 0.12)",
-                color: "var(--red)",
+                background: "#fef2f2",
+                color: "#dc2626",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 margin: "0 auto 16px",
+                border: "1px solid #fecaca",
               }}
             >
               <ShieldAlert size={30} />
@@ -101,158 +171,141 @@ export default function ConfiguracionPage() {
             <h2 style={{ fontSize: "19px", marginBottom: "8px" }}>
               Acceso Restringido
             </h2>
-            <p style={{ color: "var(--muted)", fontSize: "12px", lineHeight: 1.6 }}>
+            <p style={{ color: "var(--text-muted)", fontSize: "13px", lineHeight: 1.6 }}>
               Tu cuenta de <strong>Estudiante</strong> solo dispone de permisos
-              para monitorear métricas en tiempo real. No tienes autorización
-              para alterar los umbrales de los sensores.
+              para monitorear métricas y descargar reportes. No tienes autorización
+              para modificar los umbrales ni gestionar usuarios.
             </p>
 
-            <Link
-              href="/"
-              style={{
-                display: "inline-block",
-                marginTop: "18px",
-                padding: "9px 16px",
-                background: "rgba(32, 212, 155, 0.1)",
-                border: "1px solid rgba(32, 212, 155, 0.3)",
-                color: "var(--green)",
-                borderRadius: "8px",
-                fontSize: "11px",
-                textDecoration: "none",
-              }}
-            >
+            <Link href="/" className="back-home" style={{ marginTop: "18px" }}>
               Regresar al Dashboard
             </Link>
           </div>
         ) : (
-          /* CASO 2: Vista para Administradores y Docentes */
           <>
-            <section className="page-intro" style={{ paddingTop: "10px" }}>
+            <section className="page-intro">
               <div>
-                <span className="eyebrow">AJUSTES DEL SISTEMA</span>
+                <Link href="/" className="back-home">
+                  <ArrowLeft size={14} /> Volver al Panel Principal
+                </Link>
                 <h1>
-                  Configuración de <span>Sensores</span>
+                  Configuración y <span>Control de Acceso</span>
                 </h1>
                 <p>
-                  Calibración de umbrales analógicos y parámetros de alerta para
-                  el nodo ESP32.
+                  Calibración de rangos aptos para el nodo ESP32 y gestión de
+                  privilegios institucionales.
                 </p>
               </div>
             </section>
 
-            {/* Banner de solo lectura para docentes */}
             {esDocente && (
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
-                  background: "rgba(41, 188, 232, 0.08)",
-                  border: "1px solid rgba(41, 188, 232, 0.25)",
+                  background: "#f0f9ff",
+                  border: "1px solid #bae6fd",
                   padding: "12px 18px",
-                  borderRadius: "10px",
+                  borderRadius: "12px",
                   marginBottom: "20px",
-                  fontSize: "12px",
-                  color: "var(--cyan)",
+                  fontSize: "12.5px",
+                  color: "#0284c7",
                 }}
               >
                 <Lock size={16} />
                 <span>
-                  <strong>Modo Solo Lectura (Docente):</strong> Puedes consultar
-                  los valores configurados, pero solo los <strong>Administradores</strong>{" "}
-                  pueden guardar cambios.
+                  <strong>Modo Solo Lectura (Docente):</strong> Puedes consultar los
+                  rangos vigentes, pero solo los <strong>Administradores</strong> pueden guardar cambios.
                 </span>
               </div>
             )}
 
-            {/* Notificación de guardado */}
-            {guardadoExitoso && (
+            {mensaje.texto && (
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "10px",
-                  background: "rgba(32, 212, 155, 0.12)",
-                  border: "1px solid rgba(32, 212, 155, 0.3)",
+                  background: mensaje.tipo === "error" ? "#fef2f2" : "#ecfdf5",
+                  border: `1px solid ${mensaje.tipo === "error" ? "#fecaca" : "#a7f3d0"}`,
                   padding: "12px 18px",
-                  borderRadius: "10px",
+                  borderRadius: "12px",
                   marginBottom: "20px",
-                  fontSize: "12px",
-                  color: "var(--green)",
+                  fontSize: "12.5px",
+                  fontWeight: 600,
+                  color: mensaje.tipo === "error" ? "#dc2626" : "#059669",
                 }}
               >
                 <CheckCircle2 size={16} />
-                <span>Parámetros guardados y sincronizados con el ESP32.</span>
+                <span>{mensaje.texto}</span>
               </div>
             )}
 
             <form onSubmit={handleSave}>
               <div className="settings-grid">
-                {/* Tarjeta de Ruido */}
                 <div className="settings-card">
                   <div className="settings-title">
                     <div className="settings-icon">
-                      <Volume2 size={24} />
+                      <Volume2 size={22} />
                     </div>
                     <div>
-                      <h3>Umbral de Ruido</h3>
-                      <span>Límite de alerta acústica</span>
+                      <h3>Rango Apto de Ruido</h3>
+                      <span>Límites acústicos permitidos</span>
                     </div>
                   </div>
 
                   <div className="setting-control">
-                    <label>Límite máximo permitido</label>
-                    <div
-                      className="number-input"
-                      style={{ opacity: puedeEditar ? 1 : 0.6 }}
-                    >
+                    <label>Umbral mínimo apto</label>
+                    <div className="number-input" style={{ opacity: puedeEditar ? 1 : 0.65 }}>
+                      <input
+                        type="number"
+                        disabled={!puedeEditar}
+                        value={config.ruidoMin}
+                        onChange={(e) =>
+                          setConfig({ ...config, ruidoMin: Number(e.target.value) })
+                        }
+                      />
+                      <span>ADC</span>
+                    </div>
+                  </div>
+
+                  <div className="setting-control">
+                    <label>Umbral máximo apto</label>
+                    <div className="number-input" style={{ opacity: puedeEditar ? 1 : 0.65 }}>
                       <input
                         type="number"
                         disabled={!puedeEditar}
                         value={config.ruidoMax}
                         onChange={(e) =>
-                          setConfig({
-                            ...config,
-                            ruidoMax: Number(e.target.value),
-                          })
+                          setConfig({ ...config, ruidoMax: Number(e.target.value) })
                         }
                       />
                       <span>ADC</span>
                     </div>
-                    <small>
-                      Mediciones por encima de este valor marcan el ambiente en
-                      estado PELIGRO.
-                    </small>
                   </div>
                 </div>
 
-                {/* Tarjeta de Iluminación */}
                 <div className="settings-card">
                   <div className="settings-title">
                     <div className="settings-icon light-settings">
-                      <Sun size={24} />
+                      <Sun size={22} />
                     </div>
                     <div>
-                      <h3>Rango de Iluminación</h3>
+                      <h3>Rango Apto de Iluminación</h3>
                       <span>Confort visual en aulas</span>
                     </div>
                   </div>
 
                   <div className="setting-control">
-                    <label>Luz mínima deseada</label>
-                    <div
-                      className="number-input"
-                      style={{ opacity: puedeEditar ? 1 : 0.6 }}
-                    >
+                    <label>Luz mínima apta</label>
+                    <div className="number-input" style={{ opacity: puedeEditar ? 1 : 0.65 }}>
                       <input
                         type="number"
                         disabled={!puedeEditar}
                         value={config.luxMin}
                         onChange={(e) =>
-                          setConfig({
-                            ...config,
-                            luxMin: Number(e.target.value),
-                          })
+                          setConfig({ ...config, luxMin: Number(e.target.value) })
                         }
                       />
                       <span>lux</span>
@@ -260,53 +313,114 @@ export default function ConfiguracionPage() {
                   </div>
 
                   <div className="setting-control">
-                    <label>Luz máxima recomendada</label>
-                    <div
-                      className="number-input"
-                      style={{ opacity: puedeEditar ? 1 : 0.6 }}
-                    >
+                    <label>Luz máxima apta</label>
+                    <div className="number-input" style={{ opacity: puedeEditar ? 1 : 0.65 }}>
                       <input
                         type="number"
                         disabled={!puedeEditar}
                         value={config.luxMax}
                         onChange={(e) =>
-                          setConfig({
-                            ...config,
-                            luxMax: Number(e.target.value),
-                          })
+                          setConfig({ ...config, luxMax: Number(e.target.value) })
                         }
                       />
                       <span>lux</span>
                     </div>
-                    <small>Rango estándar para estudio y trabajo con pantallas.</small>
                   </div>
                 </div>
               </div>
 
-              {/* Botón Guardar / Estado de Edición */}
               <div className="save-settings">
-                {puedeEditar ? (
-                  <button type="submit" className="save-button">
+                {puedeEditar && (
+                  <button type="submit" disabled={guardando} className="save-button">
                     <Save size={15} />
-                    <span>Guardar Configuración</span>
+                    <span>{guardando ? "Guardando..." : "Guardar Configuración"}</span>
                   </button>
-                ) : (
-                  <div
-                    style={{
-                      fontSize: "11px",
-                      color: "var(--muted)",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      padding: "10px 0",
-                    }}
-                  >
-                    <Lock size={14} />
-                    Edición deshabilitada para tu rol
-                  </div>
                 )}
               </div>
             </form>
+
+            {/* Gestión de Usuarios Institucionales (Solo visible para Admin) */}
+            {esAdmin && (
+              <section className="table-card" style={{ marginTop: "28px" }}>
+                <div className="table-header">
+                  <div>
+                    <h3>
+                      <Users
+                        size={16}
+                        style={{ verticalAlign: "middle", marginRight: "7px" }}
+                      />
+                      Gestión de Usuarios y Roles
+                    </h3>
+                    <p>
+                      Asigna permisos de Administrador, Docente o Estudiante a los
+                      usuarios registrados en la plataforma.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="table-container">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Nombre</th>
+                        <th>Correo Institucional</th>
+                        <th>Rol Actual</th>
+                        <th>Asignar Rol</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {listaUsuarios.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} style={{ textAlign: "center", color: "var(--text-muted)" }}>
+                            Aún no hay usuarios registrados con correo electrónico.
+                          </td>
+                        </tr>
+                      ) : (
+                        listaUsuarios.map((u) => (
+                          <tr key={u.id}>
+                            <td>
+                              <strong>{u.nombre}</strong>
+                            </td>
+                            <td>{u.correo}</td>
+                            <td>
+                              <span
+                                className={`table-status ${
+                                  u.rol === "admin"
+                                    ? "good"
+                                    : u.rol === "docente"
+                                    ? "warning"
+                                    : ""
+                                }`}
+                              >
+                                {u.rol.toUpperCase()}
+                              </span>
+                            </td>
+                            <td>
+                              <select
+                                value={u.rol}
+                                onChange={(e) => cambiarRolUsuario(u.id, e.target.value)}
+                                style={{
+                                  padding: "6px 10px",
+                                  borderRadius: "8px",
+                                  border: "1px solid var(--border-card)",
+                                  background: "var(--bg-inset)",
+                                  fontSize: "12px",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                <option value="estudiante">Estudiante</option>
+                                <option value="docente">Docente</option>
+                                <option value="admin">Administrador</option>
+                              </select>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
           </>
         )}
       </main>

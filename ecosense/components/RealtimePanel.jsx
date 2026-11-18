@@ -1,99 +1,60 @@
 "use client";
 
-import {
-  Mic,
-  Sun,
-  Activity,
-} from "lucide-react";
+import { Volume2, Sun, Wifi } from "lucide-react";
 
 export default function RealtimePanel({ datos }) {
+  const ruido = datos?.ruido ?? 0;
+  const lux = datos?.lux ?? 0;
+  const conectado = datos?.conectado ?? false;
 
   return (
     <div className="realtime-panel">
-
       <div className="realtime-header">
-
         <div className="realtime-title">
           <span className="live-dot"></span>
-          <h3>Datos en tiempo real</h3>
+          <h3>Telemetría en vivo</h3>
         </div>
-
         <span className="refresh">
-          ● Actualiza cada 5 s
+          {conectado ? "SUPABASE LIVE" : "SINCRONIZANDO..."}
         </span>
-
       </div>
-
 
       <div className="realtime-data">
-
         <div className="realtime-row">
-
           <div className="realtime-icon">
-            <Mic size={20} />
+            <Volume2 size={16} />
           </div>
-
-          <div className="realtime-name">
-            Ruido
-          </div>
-
-          <strong>
-            {datos.ruido.toLocaleString()}
-          </strong>
-
-          <span className="mini-status good">
-            {datos.estadoRuido}
+          <span className="realtime-name">Sensor Acústico</span>
+          <strong>{ruido.toLocaleString("es-CO")}</strong>
+          <span className={`mini-status ${ruido <= 2500 ? "good" : "danger"}`}>
+            {datos?.estadoRuido || "APTO"}
           </span>
-
         </div>
 
-
         <div className="realtime-row">
-
           <div className="realtime-icon">
-            <Sun size={20} />
+            <Sun size={16} />
           </div>
-
-          <div className="realtime-name">
-            Luz
-          </div>
-
-          <strong>
-            {datos.lux.toFixed(0)} lux
-          </strong>
-
+          <span className="realtime-name">Sensor Lumínico</span>
+          <strong>{Math.round(lux)} lx</strong>
           <span className="mini-status good">
-            {datos.estadoLuz}
+            {datos?.estadoLuz || "APTA"}
           </span>
-
         </div>
 
-
-        <div className="realtime-row">
-
+        <div className="realtime-row" style={{ borderBottom: "none" }}>
           <div className="realtime-icon">
-            <Activity size={20} />
+            <Wifi size={16} />
           </div>
-
-          <div className="realtime-name">
-            Dispositivo
-          </div>
-
-          <strong>
-            ESP32
-          </strong>
-
+          <span className="realtime-name">Nodo ESP32</span>
+          <strong>{conectado ? "Online" : "Offline"}</strong>
           <span className="mini-status connected">
-            ONLINE
+            {conectado ? "ACTIVO" : "ESPERA"}
           </span>
-
         </div>
-
       </div>
 
-
       <div className="realtime-wave"></div>
-
     </div>
   );
 }
